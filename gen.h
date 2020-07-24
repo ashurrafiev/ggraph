@@ -4,7 +4,8 @@
 #include "graph.h"
 #include "random.h"
 
-struct Generator {
+class Generator {
+public:
 	Random random;
 	int32_t nnodes, nedges;
 	

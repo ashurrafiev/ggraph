@@ -3,7 +3,8 @@
 
 #include "gen.h"
 
-struct GenNormal : public Generator {
+class GenNormal : public Generator {
+public:
 	GenNormal(int32_t n, int32_t e) : Generator(n, e) {
 		assert(nedges <= (int64_t)nnodes * ((int64_t)nnodes -1)/2);
 	}

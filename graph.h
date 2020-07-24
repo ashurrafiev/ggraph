@@ -4,7 +4,8 @@
 #include <iostream>
 #include <vector>
 
-struct Edge {
+class Edge {
+public:
 	size_t dst;
 	int32_t cost;
 	
@@ -12,7 +13,8 @@ struct Edge {
 	Edge(uint32_t d, int32_t c) : dst(d), cost(c) {}
 };
 
-struct Node {
+class Node {
+public:
 	int32_t cost;
 	std::vector<Edge> edges;
 	
@@ -38,7 +40,8 @@ struct Node {
 	}
 };
 
-struct Graph {
+class Graph {
+public:
 	std::vector<Node> nodes;
 	
 	Edge* findEdge(size_t src, size_t dst) {
