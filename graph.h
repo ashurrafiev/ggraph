@@ -87,11 +87,11 @@ public:
 	void print(std::ostream& os = std::cout) {
 		os << nodes.size() << " " << edgeCount() << " " << maxFanout() <<std::endl;
 		for(size_t i=0; i!=nodes.size(); i++) {
-			Node* node = &nodes[i];
-			os << node->cost << " ";
-			for(size_t j=0; j!=node->edges.size(); j++) {
-				Edge* edge = &node->edges[j];
-				os << edge->dst << " " << edge->cost << " ";
+			Node& node = nodes[i];
+			os << node.cost << " " << node.edges.size() << " ";
+			for(size_t j=0; j!=node.edges.size(); j++) {
+				Edge& edge = node.edges[j];
+				os << edge.dst << " " << edge.cost << " ";
 			}
 			os << std::endl;
 		}

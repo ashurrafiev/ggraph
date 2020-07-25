@@ -3,9 +3,8 @@
 
 #include "graph.h"
 
-template<typename BinOp> int64_t ssspHopsT(Graph& g, size_t n, BinOp accum) {
-	size_t buf[g.nodeCount()] = {};
-	bool vis[g.nodeCount()] = {};
+template<typename BinOp> int64_t ssspHopsT(Graph& g, size_t n, size_t buf[], bool vis[], BinOp accum) {
+	std::fill_n(vis, g.nodeCount(), false);
 	int64_t len = 0;
 	
 	vis[n] = true;
@@ -39,10 +38,20 @@ template<typename BinOp> int64_t ssspHopsT(Graph& g, size_t n, BinOp accum) {
 	return len;
 }
 
+template<typename BinOp> int64_t ssspHopsT(Graph& g, size_t n, BinOp accum) {
+	size_t buf[g.nodeCount()] = {};
+	bool vis[g.nodeCount()];
+	
+	return ssspHopsT(g, n, buf, vis, accum);
+}
+
 template<typename BinOp> int64_t apspHopsT(Graph& g, BinOp accum) {
+	size_t buf[g.nodeCount()] = {};
+	bool vis[g.nodeCount()];
+	
 	int64_t len = 0;
 	for(size_t n=0; n<g.nodes.size(); n++) {
-		len = accum(len, ssspHopsT(g, n, accum));
+		len = accum(len, ssspHopsT(g, n, buf, vis, accum));
 	}
 	return len;
 }
