@@ -63,11 +63,11 @@ public:
 		addEdge(dst, src, cost);
 	}
 	
-	int32_t nodeCount() {
+	size_t nodeCount() {
 		return nodes.size();
 	}
 	
-	int32_t edgeCount() {
+	size_t edgeCount() {
 		int32_t sum = 0;
 		for(size_t i=0; i!=nodes.size(); i++) {
 			sum += nodes[i].edges.size();
@@ -75,10 +75,10 @@ public:
 		return sum;
 	}
 	
-	int32_t maxFanout() {
-		int32_t max = 0;
+	size_t maxFanout() {
+		size_t max = 0;
 		for(size_t i = 0; i != nodes.size(); i++) {
-			int32_t f = nodes[i].edges.size();
+			size_t f = nodes[i].edges.size();
 			if(f>max) max = f;
 		}
 		return max;

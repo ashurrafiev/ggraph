@@ -3,7 +3,7 @@
 
 #include "graph.h"
 
-template<typename BinOp> int64_t ssspHopsT(Graph& g, size_t n, size_t buf[], bool vis[], BinOp accum) {
+template<typename BinOp> int64_t ssspHopsT(Graph& g, size_t n, size_t *buf, bool *vis, BinOp accum) {
 	std::fill_n(vis, g.nodeCount(), false);
 	int64_t len = 0;
 	
@@ -17,8 +17,7 @@ template<typename BinOp> int64_t ssspHopsT(Graph& g, size_t n, size_t buf[], boo
 		if(l>0)
 			len = accum(len, l);
 		
-		size_t nodeIndex = buf[cur];
-		Node& node = g.nodes[nodeIndex];
+		Node& node = g.nodes[buf[cur]];
 		for(size_t e=0; e<node.edges.size(); e++) {
 			size_t dst = node.edges[e].dst;
 			if(!vis[dst]) {
@@ -39,20 +38,31 @@ template<typename BinOp> int64_t ssspHopsT(Graph& g, size_t n, size_t buf[], boo
 }
 
 template<typename BinOp> int64_t ssspHopsT(Graph& g, size_t n, BinOp accum) {
-	size_t buf[g.nodeCount()] = {};
-	bool vis[g.nodeCount()];
+	size_t nnodes = g.nodeCount();
+	size_t *buf = new size_t[nnodes];
+	std::fill_n(buf, nnodes, false);
+	bool *vis = new bool[nnodes];
 	
-	return ssspHopsT(g, n, buf, vis, accum);
+	int64_t len = ssspHopsT(g, n, buf, vis, accum);
+	
+	delete[] buf;
+	delete[] vis;
+	return len;
 }
 
 template<typename BinOp> int64_t apspHopsT(Graph& g, BinOp accum) {
-	size_t buf[g.nodeCount()] = {};
-	bool vis[g.nodeCount()];
+	size_t nnodes = g.nodeCount();
+	size_t *buf = new size_t[nnodes];
+	std::fill_n(buf, nnodes, false);
+	bool *vis = new bool[nnodes];
 	
 	int64_t len = 0;
-	for(size_t n=0; n<g.nodes.size(); n++) {
+	for(size_t n=0; n<nnodes; n++) {
 		len = accum(len, ssspHopsT(g, n, buf, vis, accum));
 	}
+	
+	delete[] buf;
+	delete[] vis;
 	return len;
 }
 

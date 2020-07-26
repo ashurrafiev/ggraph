@@ -4,6 +4,9 @@
 
 #include "gennormal.h"
 #include "graphalg.h"
+#include "profile.h"
+
+#define PROFILE(opt, act) if(opt) { profile.begin(); act; profile.print(); cout << endl; }
 
 using namespace std;
 
@@ -27,6 +30,8 @@ int help() {
 		<< "\tAnalysis: max of all-pair shortest paths (hops)" << endl;
 	cerr << "-a, -analysis" << endl
 		<< "\tTrigger all analysis options" << endl;
+	cerr << "-t, -time" << endl
+		<< "\tPrint time profile of analysis functions" << endl;
 	
 	cerr << endl << "Generators:" << endl;
 	cerr << "-norm <nnodes> <nedgepairs>" << endl
@@ -47,6 +52,8 @@ int main(int argc, char *argv[]) {
 	bool doApspHopsSum = false;
 	bool doApspHopsMax = false;
 	
+	Profile profile(false);
+	
 	for(int i=1; i<argc; i++) {
 		if(strcmp(argv[i], "-norm")==0) {
 			if(i+2>=argc)
@@ -57,6 +64,8 @@ int main(int argc, char *argv[]) {
 		}
 		else if(strcmp(argv[i], "-p")==0 || strcmp(argv[i], "-print")==0)
 			doPrint = true;
+		else if(strcmp(argv[i], "-t")==0 || strcmp(argv[i], "-time")==0)
+			profile.enabled = true;
 		else if(strcmp(argv[i], "-con")==0)
 			doCheckConnected = true;
 		else if(strcmp(argv[i], "-sssp-hops-sum")==0)
@@ -82,9 +91,13 @@ int main(int argc, char *argv[]) {
 	if(!gen)
 		return help();
 	
-	Graph g;
 	gen->ecost(10, 1000);
+	
+	Graph g;
+	
+	profile.begin();
 	gen->generate(g);
+	double genTime = profile.end();
 	delete gen;
 	
 	if(doPrint)
@@ -93,16 +106,16 @@ int main(int argc, char *argv[]) {
 		cout << g.nodes.size() << " " << g.edgeCount() << " " << g.maxFanout() <<endl;
 	cout << endl;
 	
-	if(doCheckConnected)
-		cout << (checkConnected(g) ? "# Connected" : "# Not connected") << endl;
-	if(doSsspHopsSum)
-		cout << "# SSSP(0) sum hops = " << ssspHopsSum(g, 0) << endl;
-	if(doSsspHopsMax)
-		cout << "# SSSP(0) max hops = " << ssspHopsMax(g, 0) << endl;
-	if(doApspHopsSum)
-		cout << "# APSP sum hops = " << apspHopsSum(g) << endl;
-	if(doApspHopsMax)
-		cout << "# APSP max hops = " << apspHopsMax(g) << endl;
+	if(profile.enabled) {
+		cout << "#";
+		profile.print(genTime, "generated");
+		cout << endl;
+	}
+	PROFILE(doCheckConnected, cout << (checkConnected(g) ? "# Connected" : "# Not connected"));
+	PROFILE(doSsspHopsSum, cout << "# SSSP(0) sum hops = " << ssspHopsSum(g, 0));
+	PROFILE(doSsspHopsMax, cout << "# SSSP(0) max hops = " << ssspHopsMax(g, 0));
+	PROFILE(doApspHopsSum, cout << "# APSP sum hops = " << apspHopsSum(g));
+	PROFILE(doApspHopsMax, cout << "# APSP max hops = " << apspHopsMax(g));
 	
 	return 0;
 }
