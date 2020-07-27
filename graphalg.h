@@ -92,7 +92,7 @@ template<typename BinOp> int64_t ssspCostsT(Graph& g, size_t n, int64_t *dist, b
 	size_t nnodes = g.nodeCount();
 	std::fill_n(dist, nnodes, -1);
 	std::fill_n(vis, nnodes, false);
-	dist[n] = 0;
+	dist[n] = g.nodes[n].cost;
 	
 	for(size_t c=0; c<nnodes; c++) {
 		int64_t min = -1;
@@ -108,7 +108,7 @@ template<typename BinOp> int64_t ssspCostsT(Graph& g, size_t n, int64_t *dist, b
 			Edge& edge = g.nodes[u].edges[e];
 			size_t v = edge.dst;
 			if(!vis[v]) {
-				int64_t d = dist[u] + edge.cost;
+				int64_t d = dist[u] + edge.cost + g.nodes[v].cost;
 				if(dist[v]<0 || d<dist[v])
 					dist[v] = d;
 			}
