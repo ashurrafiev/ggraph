@@ -33,6 +33,18 @@ int help() {
 		<< "\tAnalysis: all-pair shortest paths sum (hops)" << endl;
 	cerr << "-apsp-hops-max" << endl
 		<< "\tAnalysis: max of all-pair shortest paths (hops)" << endl;
+	cerr << "-sssp-costs-sum" << endl
+		<< "\tAnalysis: single source shortest paths sum (costs)" << endl;
+	cerr << "-sssp-costs-max" << endl
+		<< "\tAnalysis: max of single source shortest paths (costs)" << endl;
+	cerr << "-apsp-costs-sum" << endl
+		<< "\tAnalysis: all-pair shortest paths sum (costs)" << endl;
+	cerr << "-apsp-costs-max" << endl
+		<< "\tAnalysis: max of all-pair shortest paths (costs)" << endl;
+	cerr << "-sssp" << endl
+		<< "\tTrigger all SSSP analysis options" << endl;
+	cerr << "-apsp" << endl
+		<< "\tTrigger all APSP analysis options" << endl;
 	cerr << "-a, -analysis" << endl
 		<< "\tTrigger all analysis options" << endl;
 	cerr << "-t, -time" << endl
@@ -60,6 +72,10 @@ int main(int argc, char *argv[]) {
 	bool doSsspHopsMax = false;
 	bool doApspHopsSum = false;
 	bool doApspHopsMax = false;
+	bool doSsspCostsSum = false;
+	bool doSsspCostsMax = false;
+	bool doApspCostsSum = false;
+	bool doApspCostsMax = false;
 	
 	int32_t nmin = 0;
 	int32_t nmax = 0;
@@ -115,12 +131,38 @@ int main(int argc, char *argv[]) {
 			doApspHopsSum = true;
 		else if(strcmp(argv[i], "-apsp-hops-max")==0)
 			doApspHopsMax = true;
+		else if(strcmp(argv[i], "-sssp-costs-sum")==0)
+			doSsspCostsSum = true;
+		else if(strcmp(argv[i], "-sssp-costs-max")==0)
+			doSsspCostsMax = true;
+		else if(strcmp(argv[i], "-apsp-costs-sum")==0)
+			doApspCostsSum = true;
+		else if(strcmp(argv[i], "-apsp-costs-max")==0)
+			doApspCostsMax = true;
+		else if(strcmp(argv[i], "-sssp")==0) {
+			doCheckConnected = true;
+			doSsspHopsSum = true;
+			doSsspHopsMax = true;
+			doSsspCostsSum = true;
+			doSsspCostsMax = true;
+		}
+		else if(strcmp(argv[i], "-apsp")==0) {
+			doCheckConnected = true;
+			doApspHopsSum = true;
+			doApspHopsMax = true;
+			doApspCostsSum = true;
+			doApspCostsMax = true;
+		}
 		else if(strcmp(argv[i], "-a")==0 || strcmp(argv[i], "-analysis")==0) {
 			doCheckConnected = true;
 			doSsspHopsSum = true;
 			doSsspHopsMax = true;
 			doApspHopsSum = true;
 			doApspHopsMax = true;
+			doSsspCostsSum = true;
+			doSsspCostsMax = true;
+			doApspCostsSum = true;
+			doApspCostsMax = true;
 		}
 		else {
 			cerr << "Unknown option: " << argv[i] << endl;
@@ -156,6 +198,10 @@ int main(int argc, char *argv[]) {
 	PROFILE(doSsspHopsMax, cout << "# SSSP(0) max hops = " << ssspHopsMax(g, 0));
 	PROFILE(doApspHopsSum, cout << "# APSP sum hops = " << apspHopsSum(g));
 	PROFILE(doApspHopsMax, cout << "# APSP max hops = " << apspHopsMax(g));
+	PROFILE(doSsspCostsSum, cout << "# SSSP(0) sum costs = " << ssspCostsSum(g, 0));
+	PROFILE(doSsspCostsMax, cout << "# SSSP(0) max costs = " << ssspCostsMax(g, 0));
+	PROFILE(doApspCostsSum, cout << "# APSP sum costs = " << apspCostsSum(g));
+	PROFILE(doApspCostsMax, cout << "# APSP max costs = " << apspCostsMax(g));
 	
 	return 0;
 }
