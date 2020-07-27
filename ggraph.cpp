@@ -2,11 +2,12 @@
 #include <functional>
 #include <string.h>
 
-#include "gennormal.h"
 #include "graphalg.h"
 #include "profile.h"
+#include "gen.h"
 
 #define PROFILE(opt, act) if(opt) { profile.begin(); act; profile.print(); cout << endl; }
+#define SET_GEN(g) if(gen) { cerr << "Generator already defined" << endl; return help(); } else gen = g;
 
 using namespace std;
 
@@ -16,6 +17,10 @@ int help() {
 	cerr << "Usage: " << cmd << " options generator" << endl;
 	
 	cerr << endl << "Options:" << endl;
+	cerr << "-ncost <min> <max>" << endl
+		<< "\tGenerate node costs within range, default: [0, 0]" << endl;
+	cerr << "-ecost <min> <max>" << endl
+		<< "\tGenerate edge costs within range, default: [10, 1000]" << endl;
 	cerr << "-p, -print" << endl
 		<< "\tPrint graph" << endl;
 	cerr << "-con" << endl
@@ -36,6 +41,10 @@ int help() {
 	cerr << endl << "Generators:" << endl;
 	cerr << "-norm <nnodes> <nedgepairs>" << endl
 		<< "\tRandom graph with normal degree distribution" << endl;
+	cerr << "-ring <nnodes>" << endl
+		<< "\tBidirectional ring graph" << endl;
+	cerr << "-tree <degree> <depth>" << endl
+		<< "\tBidirectional tree graph" << endl;
 
 	cerr << endl;
 	return 1;
@@ -52,6 +61,11 @@ int main(int argc, char *argv[]) {
 	bool doApspHopsSum = false;
 	bool doApspHopsMax = false;
 	
+	int32_t nmin = 0;
+	int32_t nmax = 0;
+	int32_t emin = 10;
+	int32_t emax = 1000;
+	
 	Profile profile(false);
 	
 	for(int i=1; i<argc; i++) {
@@ -60,7 +74,32 @@ int main(int argc, char *argv[]) {
 				return help();
 			int32_t nnodes = atoi(argv[++i]);
 			int32_t nedges = atoi(argv[++i]);
-			gen = new GenNormal(nnodes, nedges);
+			SET_GEN(new GenNormal(nnodes, nedges));
+		}
+		else if(strcmp(argv[i], "-ring")==0) {
+			if(i+1>=argc)
+				return help();
+			int32_t nnodes = atoi(argv[++i]);
+			SET_GEN(new GenRing(nnodes));
+		}
+		else if(strcmp(argv[i], "-tree")==0) {
+			if(i+2>=argc)
+				return help();
+			int32_t base = atoi(argv[++i]);
+			int32_t depth = atoi(argv[++i]);
+			SET_GEN(new GenTree(base, depth));
+		}
+		else if(strcmp(argv[i], "-ncost")==0) {
+			if(i+2>=argc)
+				return help();
+			nmin = atoi(argv[++i]);
+			nmax = atoi(argv[++i]);
+		}
+		else if(strcmp(argv[i], "-ecost")==0) {
+			if(i+2>=argc)
+				return help();
+			emin = atoi(argv[++i]);
+			emax = atoi(argv[++i]);
 		}
 		else if(strcmp(argv[i], "-p")==0 || strcmp(argv[i], "-print")==0)
 			doPrint = true;
@@ -91,7 +130,8 @@ int main(int argc, char *argv[]) {
 	if(!gen)
 		return help();
 	
-	gen->ecost(10, 1000);
+	gen->ncost(nmin, nmax);
+	gen->ecost(emin, emax);
 	
 	Graph g;
 	

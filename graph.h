@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 
+#define NOT_FOUND ((size_t)(-1))
+
 class Edge {
 public:
 	size_t dst;
@@ -15,28 +17,29 @@ public:
 
 class Node {
 public:
+	size_t index;
 	int32_t cost;
 	std::vector<Edge> edges;
 	
-	Node() : cost(0) {}
-	Node(int32_t c) : cost(c) {}
+	Node(size_t i) : index(i), cost(0) {}
+	Node(size_t i, int32_t c) : index(i), cost(c) {}
 	
-	Edge* addEdge(size_t dst, int32_t c) {
-		Edge* edge = findEdge(dst);
-		if(!edge) {
+	size_t addEdge(size_t dst, int32_t c) {
+		size_t edge = findEdge(dst);
+		if(edge==NOT_FOUND) {
 			Edge e(dst, c);
+			edge = edges.size();
 			edges.push_back(e);
-			edge = &edges.back();
 		}
 		return edge;
 	}
 	
-	Edge* findEdge(size_t dst) {
+	size_t findEdge(size_t dst) {
 		for(size_t i=0; i!=edges.size(); i++) {
 			if(edges[i].dst == dst)
-				return &edges[i];
+				return i;
 		}
-		return 0;
+		return NOT_FOUND;
 	}
 };
 
@@ -44,17 +47,17 @@ class Graph {
 public:
 	std::vector<Node> nodes;
 	
-	Edge* findEdge(size_t src, size_t dst) {
+	size_t findEdge(size_t src, size_t dst) {
 		return nodes[src].findEdge(dst);
 	}
 	
-	Node* addNode(int32_t cost) {
-		Node node(cost);
+	size_t addNode(int32_t cost) {
+		Node node(nodes.size(), cost);
 		nodes.push_back(node);
-		return &nodes.back();
+		return node.index;
 	}
 	
-	Edge* addEdge(size_t src, size_t dst, int32_t cost) {
+	size_t addEdge(size_t src, size_t dst, int32_t cost) {
 		return nodes[src].addEdge(dst, cost);
 	}
 
