@@ -56,7 +56,7 @@ int help() {
 	cerr << "-ring <nnodes>" << endl
 		<< "\tBidirectional ring graph" << endl;
 	cerr << "-tree <degree> <depth>" << endl
-		<< "\tBidirectional tree graph" << endl;
+		<< "\tBidirectional balanced tree graph" << endl;
 
 	cerr << endl;
 	return 1;
