@@ -67,6 +67,72 @@ public:
 	
 };
 
+class GenScaleFree : public Generator {
+public:
+	int32_t nnodes, nedges;
+	float a;
+	
+	GenScaleFree(int32_t n, int32_t e) : nnodes(n), nedges(e), a(1.0) {}
+	GenScaleFree(int32_t n, int32_t e, float alpha) : nnodes(n), nedges(e), a(alpha) {}
+	
+	size_t scaleFreeRandomNode(Graph& g, size_t nodes, float max, float a) {
+		if(max>0 && nodes>0) {
+			float wn = max * (1.0 - a) / nodes;
+			float x = random.nextFloat() * max;
+			for(size_t j=0; j<nodes; j++) {
+				float w = g.nodes[j].edges.size() * a + wn; 
+				if(x < w)
+					return j;
+				x -= w;
+			}
+		}
+		return 0;
+	}
+
+	size_t scaleFreeRandomNodeMax(Graph& g, size_t nodes) {
+		size_t max = 0;
+		for(size_t j=0; j<nodes; j++)
+			max += g.nodes[j].edges.size();
+		return max;
+	}
+	
+	virtual void generate(Graph& g) {
+		if(nedges<nnodes)
+			nedges = nnodes;
+		addNodes(g, nnodes);
+
+		size_t edges = 0;
+		float mi = 0.0;
+		for(size_t i=1; i<nnodes; i++) {
+			mi += (float)(nedges-edges) / (nnodes-i);
+			size_t max = scaleFreeRandomNodeMax(g, i+1);
+			size_t dst = scaleFreeRandomNode(g, i, max, 1.0);
+			if(dst!=i) {
+				g.addEdgePair(i, dst, randomEdgeCost());
+				mi -= 1.0;
+				edges++;
+			}
+			size_t misses = 0;
+			while(mi>=i+1 && misses<i) {
+				max = scaleFreeRandomNodeMax(g, i+1);
+				size_t src = scaleFreeRandomNode(g, i+1, max, a);
+				dst = scaleFreeRandomNode(g, i+1, max, 1.0);
+				if(dst!=src) {
+					if(g.nodes[src].findEdge(dst)==NOT_FOUND) {
+						g.addEdgePair(src, dst, randomEdgeCost());
+						mi -= 1.0;
+						edges++;
+					}
+					else {
+						misses++;
+					}
+				}
+			}
+		}
+	}
+	
+};
+
 class GenRing : public Generator {
 public:
 	int32_t nnodes;

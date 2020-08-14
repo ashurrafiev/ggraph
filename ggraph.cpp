@@ -57,6 +57,10 @@ int help() {
 	cerr << endl << "Generators:" << endl;
 	cerr << "-norm <nnodes> <nedgepairs>" << endl
 		<< "\tRandom graph with normal degree distribution" << endl;
+	cerr << "-sfree <nnodes> <nedgepairs>" << endl
+		<< "\tRandom scale-free graph" << endl;
+	cerr << "-sfreea <nnodes> <nedgepairs> <alpha>" << endl
+		<< "\tRandom scale-free aproximate graph with approximation parameter alpha (float in [0.0, 1.0])" << endl;
 	cerr << "-ring <nnodes>" << endl
 		<< "\tBidirectional ring graph" << endl;
 	cerr << "-tree <degree> <depth>" << endl
@@ -106,6 +110,21 @@ int main(int argc, char *argv[]) {
 			int32_t nnodes = atoi(argv[++i]);
 			int32_t nedges = atoi(argv[++i]);
 			SET_GEN(new GenNormal(nnodes, nedges));
+		}
+		else if(strcmp(argv[i], "-sfree")==0) {
+			if(i+2>=argc)
+				return help();
+			int32_t nnodes = atoi(argv[++i]);
+			int32_t nedges = atoi(argv[++i]);
+			SET_GEN(new GenScaleFree(nnodes, nedges));
+		}
+		else if(strcmp(argv[i], "-sfreea")==0) {
+			if(i+3>=argc)
+				return help();
+			int32_t nnodes = atoi(argv[++i]);
+			int32_t nedges = atoi(argv[++i]);
+			float alpha = atof(argv[++i]);
+			SET_GEN(new GenScaleFree(nnodes, nedges, alpha));
 		}
 		else if(strcmp(argv[i], "-ring")==0) {
 			if(i+1>=argc)
