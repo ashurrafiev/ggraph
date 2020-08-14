@@ -53,7 +53,7 @@ public:
 		assert(nedges <= (int64_t)nnodes * ((int64_t)nnodes -1)/2);
 	}
 	
-	void generate(Graph& g) {
+	virtual void generate(Graph& g) {
 		addNodes(g, nnodes);
 		for(int32_t i=0; i<nedges; i++) {
 			size_t src, dst;
@@ -73,7 +73,7 @@ public:
 	
 	GenRing(int32_t n) : nnodes(n) {}
 	
-	void generate(Graph& g) {
+	virtual void generate(Graph& g) {
 		addNodes(g, nnodes);
 		for(int32_t i=0; i<nnodes; i++) {
 			g.addEdgePair(i, i>0 ? i-1 : nnodes-1, randomEdgeCost());
@@ -104,8 +104,108 @@ public:
 		return node;
 	}
 	
-	void generate(Graph& g) {
+	virtual void generate(Graph& g) {
 		generateTree(g, depth);
+	}
+};
+
+class GenGrid2D8 : public Generator {
+public:
+	int32_t w, h;
+	
+	GenGrid2D8(int32_t width, int32_t height) : w(width), h(height) {}
+	
+	size_t index(int32_t i, int32_t j) {
+		return j*w+i;
+	}
+
+	bool inRange(int32_t i, int32_t j) {
+		return i>=0 && i<w && j>=0 && j<h;
+	}
+	
+	virtual bool hasEdge(int32_t ri, int32_t rj) {
+		return ri!=0 || rj!=0;
+	}
+	
+	virtual void generate(Graph& g) {
+		addNodes(g, w*h);
+		for(int32_t sj=0; sj<h; sj++)
+			for(int32_t si=0; si<w; si++) {
+				size_t s = index(si, sj);
+				for(int32_t rj=-1; rj<=1; rj++)
+					for(int32_t ri=-1; ri<=1; ri++) {
+						if(hasEdge(ri, rj)) {
+							int32_t di = si+ri;
+							int32_t dj = sj+rj;
+							if(!inRange(di, dj))
+								continue;
+							size_t d = index(di, dj);
+							if(s<d)
+								g.addEdgePair(s, d, randomEdgeCost());
+						}
+					}
+			}
+	}
+};
+
+class GenGrid2D4 : public GenGrid2D8 {
+public:
+	GenGrid2D4(int32_t width, int32_t height) : GenGrid2D8(width, height) {}
+	
+	virtual bool hasEdge(int32_t ri, int32_t rj) {
+		return (ri!=0)!=(rj!=0);
+	}
+	
+};
+
+class GenGrid3D26 : public Generator {
+public:
+	int32_t w, l, h;
+	
+	GenGrid3D26(int32_t width, int32_t length, int32_t height) : w(width), l(length), h(height) {}
+	
+	size_t index(int32_t i, int32_t j, int32_t k) {
+		return (k*l+j)*w+i;
+	}
+
+	bool inRange(int32_t i, int32_t j, int32_t k) {
+		return i>=0 && i<w && j>=0 && j<l && k>=0 && k<h;
+	}
+	
+	virtual bool hasEdge(int32_t ri, int32_t rj, int32_t rk) {
+		return ri!=0 || rj!=0 || rk!=0;
+	}
+	
+	virtual void generate(Graph& g) {
+		addNodes(g, w*l*h);
+		for(int32_t sk=0; sk<h; sk++)
+			for(int32_t sj=0; sj<l; sj++)
+				for(int32_t si=0; si<w; si++) {
+					size_t s = index(si, sj, sk);
+					for(int32_t rk=-1; rk<=1; rk++)
+						for(int32_t rj=-1; rj<=1; rj++)
+							for(int32_t ri=-1; ri<=1; ri++) {
+								if(hasEdge(ri, rj, rk)) {
+									int32_t di = si+ri;
+									int32_t dj = sj+rj;
+									int32_t dk = sk+rk;
+									if(!inRange(di, dj, dk))
+										continue;
+									size_t d = index(di, dj, dk);
+									if(s<d)
+										g.addEdgePair(s, d, randomEdgeCost());
+								}
+							}
+				}
+	}
+};
+
+class GenGrid3D6 : public GenGrid3D26 {
+public:
+	GenGrid3D6(int32_t width, int32_t length, int32_t height) : GenGrid3D26(width, length, height) {}
+	
+	virtual bool hasEdge(int32_t ri, int32_t rj, int32_t rk) {
+		return (ri!=0)!=(rj!=0) && (rk==0) || (ri==0) && (rj==0) && (rk!=0);
 	}
 };
 

@@ -5,6 +5,12 @@
 #include <assert.h>
 #include <sys/time.h>
 
+uint64_t currentTimeMillis() {
+	struct timeval t;
+	gettimeofday(&t, NULL);
+	return (uint64_t)t.tv_sec + (uint64_t)t.tv_usec / 1000;
+}
+
 class Random {
 private:
 	static const int64_t multiplier = 0x5DEECE66DL;
@@ -24,9 +30,7 @@ private:
 	
 public:
 	Random() {
-		struct timeval t;
-		gettimeofday(&t, NULL);
-		setSeed((uint64_t)t.tv_sec + (uint64_t)t.tv_usec / 1000);
+		setSeed(currentTimeMillis());
 	}
 	
 	Random(uint64_t seed) : _seed(initialScramble(seed)) {}
