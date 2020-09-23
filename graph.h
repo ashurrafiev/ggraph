@@ -1,6 +1,7 @@
 #ifndef _GRAPH_H_
 #define _GRAPH_H_
 
+#include <math.h>
 #include <iostream>
 #include <vector>
 
@@ -61,9 +62,9 @@ public:
 		return nodes[src].addEdge(dst, cost);
 	}
 
-	void addEdgePair(size_t src, size_t dst, int32_t cost) {
-		addEdge(src, dst, cost);
-		addEdge(dst, src, cost);
+	bool addEdgePair(size_t src, size_t dst, int32_t cost) {
+		return addEdge(src, dst, cost)!=NOT_FOUND &&
+			addEdge(dst, src, cost)!=NOT_FOUND;
 	}
 	
 	size_t nodeCount() {
@@ -87,6 +88,20 @@ public:
 		return max;
 	}
 	
+	double meanFanout() {
+		return (double)edgeCount() / nodes.size();
+	}
+	
+	double sdevFanout() {
+		double mean = meanFanout();
+		double s = 0;
+		for(size_t i = 0; i != nodes.size(); i++) {
+			size_t f = nodes[i].edges.size();
+			s += (f-mean)*(f-mean);
+		}
+		return sqrt(s/(nodes.size()-1));
+	}
+	
 	void print(std::ostream& os = std::cout) {
 		os << nodes.size() << " " << edgeCount() << " " << maxFanout() <<std::endl;
 		for(size_t i=0; i!=nodes.size(); i++) {
@@ -98,6 +113,25 @@ public:
 			}
 			os << std::endl;
 		}
+	}
+	
+	void printDDist(std::ostream& os = std::cout) {
+		std::vector<size_t> dd;
+		for(size_t i=0; i!=nodes.size(); i++) {
+			Node& node = nodes[i];
+			size_t f = node.edges.size();
+			while(dd.size()<=f)
+				dd.push_back(0);
+			dd[f] += 1;
+		}
+		
+		bool first = true; 
+		for(size_t i=0; i!=dd.size(); i++) {
+			if(!first) os << ",";
+			os << dd[i];
+			first = false;
+		}
+		os << std::endl;
 	}
 	
 };

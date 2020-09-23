@@ -25,6 +25,8 @@ int help() {
 		<< "\tGenerate edge costs within range, default: [10, 1000]" << endl;
 	cerr << "-p, -print" << endl
 		<< "\tPrint graph" << endl;
+	cerr << "-dd, -ddist" << endl
+		<< "\tPrint degree distribution" << endl;
 	cerr << "-root" << endl
 		<< "\tSuggest root node" << endl;
 	cerr << "-con" << endl
@@ -73,6 +75,8 @@ int help() {
 		<< "\t6-connected 3D grid" << endl;
 	cerr << "-grid3d26 <w> <h>" << endl
 		<< "\t26-connected 3D grid" << endl;
+	cerr << "-randgrid <size> <ratio%>" << endl
+		<< "\t(Undocumented)" << endl;
 
 	cerr << endl;
 	return 1;
@@ -84,6 +88,7 @@ int main(int argc, char *argv[]) {
 	Generator *gen = 0;
 	uint64_t seed = currentTimeMillis();
 	bool doPrint = false;
+	bool doPrintDDist = false;
 	bool doRootNode = false;
 	bool doCheckConnected = false;
 	bool doSsspHopsSum = false;
@@ -116,7 +121,7 @@ int main(int argc, char *argv[]) {
 				return help();
 			int32_t nnodes = atoi(argv[++i]);
 			int32_t nedges = atoi(argv[++i]);
-			SET_GEN(new GenScaleFree(nnodes, nedges));
+			SET_GEN(new GenScaleFreeOpt(nnodes, nedges));
 		}
 		else if(strcmp(argv[i], "-sfreea")==0) {
 			if(i+3>=argc)
@@ -173,6 +178,14 @@ int main(int argc, char *argv[]) {
 			SET_GEN(new GenGrid3D26(w, l, h));
 			rootNode = ((GenGrid3D26 *) gen)->index(w/2, l/2, h/2);
 		}
+		else if(strcmp(argv[i], "-randgrid")==0) {
+			if(i+2>=argc)
+				return help();
+			int32_t size = atoi(argv[++i]);
+			float ratio = (float)atoi(argv[++i]) / 100.0;
+			SET_GEN(new GenRandGrid(size, ratio));
+			rootNode = ((GenRandGrid *) gen)->index(size/2, size/2);
+		}
 		else if(strcmp(argv[i], "-seed")==0) {
 			if(i+1>=argc)
 				return help();
@@ -192,6 +205,8 @@ int main(int argc, char *argv[]) {
 		}
 		else if(strcmp(argv[i], "-p")==0 || strcmp(argv[i], "-print")==0)
 			doPrint = true;
+		else if(strcmp(argv[i], "-dd")==0 || strcmp(argv[i], "-ddist")==0)
+			doPrintDDist = true;
 		else if(strcmp(argv[i], "-root")==0)
 			doRootNode = true;
 		else if(strcmp(argv[i], "-t")==0 || strcmp(argv[i], "-time")==0)
@@ -266,6 +281,8 @@ int main(int argc, char *argv[]) {
 	cout << "$seed " << seed << endl;
 	if(doRootNode)
 		cout << "$rootNode " << rootNode << endl;
+	else
+		rootNode = 0;
 	
 	cout << endl;
 	if(profile.enabled) {
@@ -282,6 +299,11 @@ int main(int argc, char *argv[]) {
 	PROFILE(doSsspCostsMax, cout << "# SSSP(" << rootNode << ") max costs = " << ssspCostsMax(g, rootNode));
 	PROFILE(doApspCostsSum, cout << "# APSP sum costs = " << apspCostsSum(g));
 	PROFILE(doApspCostsMax, cout << "# APSP max costs = " << apspCostsMax(g));
+	if(doPrintDDist) {
+		cout << "# Degree dist: ";
+		g.printDDist();
+		cout << "# Fanout: mean = " << g.meanFanout() << ", sdev = " << g.sdevFanout() << ", max = " << g.maxFanout() << endl;
+	}
 	
 	return 0;
 }

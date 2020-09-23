@@ -67,6 +67,52 @@ public:
 	
 };
 
+class GenScaleFreeOpt : public Generator {
+public:
+	int32_t nnodes, nedges;
+	
+	GenScaleFreeOpt(int32_t n, int32_t e) : nnodes(n), nedges(e) {}
+	
+	virtual void generate(Graph& g) {
+		if(nedges<nnodes)
+			nedges = nnodes;
+		addNodes(g, nnodes);
+
+		size_t *edgeList = new size_t[nedges*2];
+		size_t edges = 0;
+		g.addEdgePair(0, 1, randomEdgeCost());
+		edgeList[edges++] = 0;
+		edgeList[edges++] = 1;
+		float mi = 0.0;
+		for(size_t i=2; i<nnodes; i++) {
+			mi += (float)(nedges-edges/2) / (nnodes-i);
+			size_t dst = edgeList[random.nextInt(edges)];
+			g.addEdgePair(i, dst, randomEdgeCost());
+			mi -= 1.0;
+			edgeList[edges++] = i;
+			edgeList[edges++] = dst;
+
+			size_t misses = 0;
+			while(mi>=i+1 && misses<i) {
+				size_t src = edgeList[random.nextInt(edges)];
+				dst = edgeList[random.nextInt(edges)];
+				if(dst!=src) {
+					if(g.nodes[src].findEdge(dst)==NOT_FOUND) {
+						g.addEdgePair(src, dst, randomEdgeCost());
+						mi -= 1.0;
+						edgeList[edges++] = src;
+						edgeList[edges++] = dst;
+					}
+					else {
+						misses++;
+					}
+				}
+			}
+		}
+		delete[] edgeList;
+	}
+};
+
 class GenScaleFree : public Generator {
 public:
 	int32_t nnodes, nedges;
@@ -130,7 +176,6 @@ public:
 			}
 		}
 	}
-	
 };
 
 class GenRing : public Generator {
@@ -208,6 +253,44 @@ public:
 							size_t d = index(di, dj);
 							if(s<d)
 								g.addEdgePair(s, d, randomEdgeCost());
+						}
+					}
+			}
+	}
+};
+
+class GenRandGrid : public GenGrid2D8 {
+public:
+	float randRatio;
+	
+	GenRandGrid(int32_t size, float ratio) : GenGrid2D8(size, size), randRatio(ratio) {}
+	
+	virtual void generate(Graph& g) {
+		addNodes(g, w*h);
+		for(int32_t sj=0; sj<h; sj++)
+			for(int32_t si=0; si<w; si++) {
+				size_t s = index(si, sj);
+				for(int32_t rj=-1; rj<=1; rj++)
+					for(int32_t ri=-1; ri<=1; ri++) {
+						if(hasEdge(ri, rj)) {
+							int32_t di = si+ri;
+							int32_t dj = sj+rj;
+							if(!inRange(di, dj))
+								continue;
+							size_t d = index(di, dj);
+							if(random.nextFloat()<randRatio) {
+								size_t src, dst;
+								do {
+									do {
+										src = random.nextInt(w*h);
+										dst = random.nextInt(w*h);
+									} while(src==dst);
+								} while(!g.addEdgePair(src, dst, randomEdgeCost()));
+							}
+							else {
+								if(s<d)
+									g.addEdgePair(s, d, randomEdgeCost());
+							}
 						}
 					}
 			}
