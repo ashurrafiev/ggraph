@@ -42,6 +42,10 @@ public:
 		}
 		return NOT_FOUND;
 	}
+	
+	void remove(size_t edgeIndex) {
+		edges.erase(edges.begin()+edgeIndex);
+	}
 };
 
 class Graph {
@@ -65,6 +69,17 @@ public:
 	bool addEdgePair(size_t src, size_t dst, int32_t cost) {
 		return addEdge(src, dst, cost)!=NOT_FOUND &&
 			addEdge(dst, src, cost)!=NOT_FOUND;
+	}
+	
+	void flattenCosts() {
+		for(size_t i=0; i!=nodes.size(); i++) {
+			Node& node = nodes[i];
+			node.cost = (node.cost!=0) ? 1 : 0;
+			for(size_t j=0; j!=node.edges.size(); j++) {
+				Edge& edge = node.edges[j];
+				edge.cost = (edge.cost!=0) ? 1 : 0;
+			}
+		}
 	}
 	
 	size_t nodeCount() {
@@ -100,6 +115,26 @@ public:
 			s += (f-mean)*(f-mean);
 		}
 		return sqrt(s/(nodes.size()-1));
+	}
+	
+	void read(std::istream& is) {
+		size_t totalNodes, totalEdges, maxFanout;
+		is >> totalNodes >> totalEdges >> maxFanout;
+		for(int32_t i=0; i<totalNodes; i++)
+			addNode(0);
+		for(size_t i = 0; i < totalNodes; i++) {
+			Node& node = nodes[i];
+			size_t edges;
+			is >> node.cost >> edges;
+			for(size_t j=0; j<edges; j++) {
+				size_t dst;
+				int32_t w;
+				is >> dst >> w;
+				node.addEdge(dst, w);
+				totalEdges--;
+			}
+		}
+		// assert(totalEdges==0);
 	}
 	
 	void print(std::ostream& os = std::cout) {

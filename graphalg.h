@@ -3,6 +3,8 @@
 
 #include "graph.h"
 
+bool ignoreWeightedNodes = false;
+
 template<typename BinOp> int64_t ssspHopsT(Graph& g, size_t n, size_t *buf, bool *vis, BinOp accum) {
 	std::fill_n(vis, g.nodeCount(), false);
 	int64_t len = 0;
@@ -14,10 +16,10 @@ template<typename BinOp> int64_t ssspHopsT(Graph& g, size_t n, size_t *buf, bool
 	int32_t lend = 0;
 	int32_t end = 0;
 	while(cur<=end) {
-		if(l>0)
+		Node& node = g.nodes[buf[cur]];
+		if(l>0 && (!ignoreWeightedNodes || !node.cost))
 			len = accum(len, l);
 		
-		Node& node = g.nodes[buf[cur]];
 		for(size_t e=0; e<node.edges.size(); e++) {
 			size_t dst = node.edges[e].dst;
 			if(!vis[dst]) {
@@ -58,7 +60,8 @@ template<typename BinOp> int64_t apspHopsT(Graph& g, BinOp accum) {
 	
 	int64_t len = 0;
 	for(size_t n=0; n<nnodes; n++) {
-		len = accum(len, ssspHopsT(g, n, buf, vis, accum));
+		if(!ignoreWeightedNodes || !g.nodes[n].cost)
+			len = accum(len, ssspHopsT(g, n, buf, vis, accum));
 	}
 	
 	delete[] buf;
@@ -92,7 +95,7 @@ template<typename BinOp> int64_t ssspCostsT(Graph& g, size_t n, int64_t *dist, b
 	size_t nnodes = g.nodeCount();
 	std::fill_n(dist, nnodes, -1);
 	std::fill_n(vis, nnodes, false);
-	dist[n] = g.nodes[n].cost;
+	dist[n] = 0; //g.nodes[n].cost;
 	
 	for(size_t c=0; c<nnodes; c++) {
 		int64_t min = -1;
@@ -108,7 +111,7 @@ template<typename BinOp> int64_t ssspCostsT(Graph& g, size_t n, int64_t *dist, b
 			Edge& edge = g.nodes[u].edges[e];
 			size_t v = edge.dst;
 			if(!vis[v]) {
-				int64_t d = dist[u] + edge.cost + g.nodes[v].cost;
+				int64_t d = dist[u] + edge.cost; // + g.nodes[v].cost;
 				if(dist[v]<0 || d<dist[v])
 					dist[v] = d;
 			}
@@ -117,7 +120,8 @@ template<typename BinOp> int64_t ssspCostsT(Graph& g, size_t n, int64_t *dist, b
 
 	int64_t len = 0;
 	for(size_t c=0; c<nnodes; c++) {
-		len = accum(len, dist[c]);
+		if(!ignoreWeightedNodes || !g.nodes[c].cost)
+			len = accum(len, dist[c]);
 	}
 	return len;
 }
@@ -141,7 +145,8 @@ template<typename BinOp> int64_t apspCostsT(Graph& g, BinOp accum) {
 	
 	int64_t len = 0;
 	for(size_t n=0; n<nnodes; n++) {
-		len = accum(len, ssspCostsT(g, n, dist, vis, accum));
+		if(!ignoreWeightedNodes || !g.nodes[n].cost)
+			len = accum(len, ssspCostsT(g, n, dist, vis, accum));
 	}
 	
 	delete[] dist;

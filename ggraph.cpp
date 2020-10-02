@@ -5,6 +5,7 @@
 #include "graphalg.h"
 #include "profile.h"
 #include "gen.h"
+#include "flimit.h"
 
 #define PROFILE(opt, act) if(opt) { profile.begin(); act; profile.print(); cout << endl; }
 #define SET_GEN(g) if(gen) { cerr << "Generator already defined" << endl; return help(); } else gen = g;
@@ -29,6 +30,11 @@ int help() {
 		<< "\tPrint degree distribution" << endl;
 	cerr << "-root" << endl
 		<< "\tSuggest root node" << endl;
+	cerr << "-flatw" << endl
+		<< "\tSet all non-zero costs to 1" << endl;
+	cerr << "-flim <limit>" << endl
+		<< "\tLimit fanout by splitting nodes using zero-cost edges" << endl
+		<< "\tsplit node connections form a ring" << endl;
 	cerr << "-con" << endl
 		<< "\tAnalysis: check connectivity" << endl;
 	cerr << "-sssp-hops-sum" << endl
@@ -47,6 +53,8 @@ int help() {
 		<< "\tAnalysis: all-pair shortest paths sum (costs)" << endl;
 	cerr << "-apsp-costs-max" << endl
 		<< "\tAnalysis: max of all-pair shortest paths (costs)" << endl;
+	cerr << "-ignore-weighted-nodes" << endl
+		<< "\tNodes with non-zero costs are not counted for during SSSP/APSP (required for node splitting)" << endl;
 	cerr << "-sssp" << endl
 		<< "\tTrigger all SSSP analysis options" << endl;
 	cerr << "-apsp" << endl
@@ -57,6 +65,8 @@ int help() {
 		<< "\tPrint time profile of analysis functions" << endl;
 	
 	cerr << endl << "Generators:" << endl;
+	cerr << "-in <filename>" << endl
+		<< "\tRead graph from file in -print format" << endl;
 	cerr << "-norm <nnodes> <nedgepairs>" << endl
 		<< "\tRandom graph with normal degree distribution" << endl;
 	cerr << "-sfree <nnodes> <nedgepairs>" << endl
@@ -86,10 +96,12 @@ int main(int argc, char *argv[]) {
 	cmd = argv[0];
 	
 	Generator *gen = 0;
+	const char* sourcePath = 0;
 	uint64_t seed = currentTimeMillis();
 	bool doPrint = false;
 	bool doPrintDDist = false;
 	bool doRootNode = false;
+	bool doFlattenCosts = false;
 	bool doCheckConnected = false;
 	bool doSsspHopsSum = false;
 	bool doSsspHopsMax = false;
@@ -104,12 +116,20 @@ int main(int argc, char *argv[]) {
 	int32_t nmax = 0;
 	int32_t emin = 10;
 	int32_t emax = 1000;
+	size_t flim = 0;
 	size_t rootNode = 0;
 	
 	Profile profile(false);
 	
 	for(int i=1; i<argc; i++) {
-		if(strcmp(argv[i], "-norm")==0) {
+		if(strcmp(argv[i], "-in")==0) {
+			if(i+1>=argc)
+				return help();
+			seed = 0;
+			sourcePath = argv[++i];
+			SET_GEN(new GenRead(sourcePath));
+		}
+		else if(strcmp(argv[i], "-norm")==0) {
 			if(i+2>=argc)
 				return help();
 			int32_t nnodes = atoi(argv[++i]);
@@ -150,7 +170,6 @@ int main(int argc, char *argv[]) {
 			int32_t w = atoi(argv[++i]);
 			int32_t h = atoi(argv[++i]);
 			SET_GEN(new GenGrid2D4(w, h));
-			rootNode = ((GenGrid2D4 *) gen)->index(w/2, h/2);
 		}
 		else if(strcmp(argv[i], "-grid2d8")==0) {
 			if(i+2>=argc)
@@ -158,7 +177,6 @@ int main(int argc, char *argv[]) {
 			int32_t w = atoi(argv[++i]);
 			int32_t h = atoi(argv[++i]);
 			SET_GEN(new GenGrid2D8(w, h));
-			rootNode = ((GenGrid2D8 *) gen)->index(w/2, h/2);
 		}
 		else if(strcmp(argv[i], "-grid3d6")==0) {
 			if(i+3>=argc)
@@ -167,7 +185,6 @@ int main(int argc, char *argv[]) {
 			int32_t l = atoi(argv[++i]);
 			int32_t h = atoi(argv[++i]);
 			SET_GEN(new GenGrid3D6(w, l, h));
-			rootNode = ((GenGrid3D6 *) gen)->index(w/2, l/2, h/2);
 		}
 		else if(strcmp(argv[i], "-grid3d26")==0) {
 			if(i+3>=argc)
@@ -176,7 +193,6 @@ int main(int argc, char *argv[]) {
 			int32_t l = atoi(argv[++i]);
 			int32_t h = atoi(argv[++i]);
 			SET_GEN(new GenGrid3D26(w, l, h));
-			rootNode = ((GenGrid3D26 *) gen)->index(w/2, l/2, h/2);
 		}
 		else if(strcmp(argv[i], "-randgrid")==0) {
 			if(i+2>=argc)
@@ -184,7 +200,6 @@ int main(int argc, char *argv[]) {
 			int32_t size = atoi(argv[++i]);
 			float ratio = (float)atoi(argv[++i]) / 100.0;
 			SET_GEN(new GenRandGrid(size, ratio));
-			rootNode = ((GenRandGrid *) gen)->index(size/2, size/2);
 		}
 		else if(strcmp(argv[i], "-seed")==0) {
 			if(i+1>=argc)
@@ -211,6 +226,15 @@ int main(int argc, char *argv[]) {
 			doRootNode = true;
 		else if(strcmp(argv[i], "-t")==0 || strcmp(argv[i], "-time")==0)
 			profile.enabled = true;
+		else if(strcmp(argv[i], "-flatw")==0)
+			doFlattenCosts = true;
+		else if(strcmp(argv[i], "-flim")==0) {
+			if(i+1>=argc)
+				return help();
+			flim = atoi(argv[++i]);
+		}
+		else if(strcmp(argv[i], "-ignore-weighted-nodes")==0)
+			ignoreWeightedNodes = true;
 		else if(strcmp(argv[i], "-con")==0)
 			doCheckConnected = true;
 		else if(strcmp(argv[i], "-sssp-hops-sum")==0)
@@ -259,26 +283,40 @@ int main(int argc, char *argv[]) {
 			return help();
 		}
 	}
+
 	if(!gen)
 		return help();
-	
+
+	Graph* g = new Graph();
+	profile.begin();
+
 	gen->ncost(nmin, nmax);
 	gen->ecost(emin, emax);
-	
-	Graph g;
-	
-	profile.begin();
-	gen->generate(g, seed);
+	gen->generate(*g, seed);
+	rootNode = gen->suggestRoot();
 	double genTime = profile.end();
 	delete gen;
 	
+	if(doFlattenCosts)
+		g->flattenCosts();
+	
+	if(flim>1) {
+		Graph* go = new Graph();
+		fanoutLimitRing(g, go, flim);
+		delete g;
+		g = go;
+	}
+	
 	if(doPrint)
-		g.print();
+		g->print();
 	else
-		cout << g.nodes.size() << " " << g.edgeCount() << " " << g.maxFanout() <<endl;
+		cout << g->nodes.size() << " " << g->edgeCount() << " " << g->maxFanout() <<endl;
 	cout << endl;
 	
-	cout << "$seed " << seed << endl;
+	if(seed)
+		cout << "$seed " << seed << endl;
+	if(sourcePath)
+		cout << "$sourcePath " << sourcePath << endl;
 	if(doRootNode)
 		cout << "$rootNode " << rootNode << endl;
 	else
@@ -290,20 +328,21 @@ int main(int argc, char *argv[]) {
 		profile.print(genTime, "generated");
 		cout << endl;
 	}
-	PROFILE(doCheckConnected, cout << (checkConnected(g) ? "# Connected" : "# Not connected"));
-	PROFILE(doSsspHopsSum, cout << "# SSSP(" << rootNode << ") sum hops = " << ssspHopsSum(g, rootNode));
-	PROFILE(doSsspHopsMax, cout << "# SSSP(" << rootNode << ") max hops = " << ssspHopsMax(g, rootNode));
-	PROFILE(doApspHopsSum, cout << "# APSP sum hops = " << apspHopsSum(g));
-	PROFILE(doApspHopsMax, cout << "# APSP max hops = " << apspHopsMax(g));
-	PROFILE(doSsspCostsSum, cout << "# SSSP(" << rootNode << ") sum costs = " << ssspCostsSum(g, rootNode));
-	PROFILE(doSsspCostsMax, cout << "# SSSP(" << rootNode << ") max costs = " << ssspCostsMax(g, rootNode));
-	PROFILE(doApspCostsSum, cout << "# APSP sum costs = " << apspCostsSum(g));
-	PROFILE(doApspCostsMax, cout << "# APSP max costs = " << apspCostsMax(g));
+	PROFILE(doCheckConnected, cout << (checkConnected(*g) ? "# Connected" : "# Not connected"));
+	PROFILE(doSsspHopsSum, cout << "# SSSP(" << rootNode << ") sum hops = " << ssspHopsSum(*g, rootNode));
+	PROFILE(doSsspHopsMax, cout << "# SSSP(" << rootNode << ") max hops = " << ssspHopsMax(*g, rootNode));
+	PROFILE(doApspHopsSum, cout << "# APSP sum hops = " << apspHopsSum(*g));
+	PROFILE(doApspHopsMax, cout << "# APSP max hops = " << apspHopsMax(*g));
+	PROFILE(doSsspCostsSum, cout << "# SSSP(" << rootNode << ") sum costs = " << ssspCostsSum(*g, rootNode));
+	PROFILE(doSsspCostsMax, cout << "# SSSP(" << rootNode << ") max costs = " << ssspCostsMax(*g, rootNode));
+	PROFILE(doApspCostsSum, cout << "# APSP sum costs = " << apspCostsSum(*g));
+	PROFILE(doApspCostsMax, cout << "# APSP max costs = " << apspCostsMax(*g));
 	if(doPrintDDist) {
 		cout << "# Degree dist: ";
-		g.printDDist();
-		cout << "# Fanout: mean = " << g.meanFanout() << ", sdev = " << g.sdevFanout() << ", max = " << g.maxFanout() << endl;
+		g->printDDist();
+		cout << "# Fanout: mean = " << g->meanFanout() << ", sdev = " << g->sdevFanout() << ", max = " << g->maxFanout() << endl;
 	}
 	
+	delete g;
 	return 0;
 }

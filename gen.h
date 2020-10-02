@@ -1,6 +1,9 @@
 #ifndef _GEN_H_
 #define _GEN_H_
 
+#include <iostream>
+#include <fstream>
+
 #include "graph.h"
 #include "random.h"
 
@@ -41,6 +44,10 @@ public:
 
 	int32_t randomEdgeCost() {
 		return random.nextInt(emin, emax);
+	}
+	
+	virtual size_t suggestRoot() {
+		return 0;
 	}
 	
 };
@@ -257,6 +264,10 @@ public:
 					}
 			}
 	}
+	
+	virtual size_t suggestRoot() {
+		return index(w/2, h/2);
+	}
 };
 
 class GenRandGrid : public GenGrid2D8 {
@@ -347,6 +358,10 @@ public:
 							}
 				}
 	}
+	
+	virtual size_t suggestRoot() {
+		return index(w/2, l/2, h/2);
+	}
 };
 
 class GenGrid3D6 : public GenGrid3D26 {
@@ -355,6 +370,43 @@ public:
 	
 	virtual bool hasEdge(int32_t ri, int32_t rj, int32_t rk) {
 		return (ri!=0)!=(rj!=0) && (rk==0) || (ri==0) && (rj==0) && (rk!=0);
+	}
+};
+
+class GenRead : public Generator {
+public:
+	const char* path;
+	size_t root;
+	
+	GenRead(const char* _path) : path(_path), root(0) {}
+	
+	virtual void generate(Graph& g) {
+		std::ifstream is;
+		is.open(path);
+		if(!is.is_open()) {
+			std::cerr << "Cannot read input file" << std::endl;
+			exit(EXIT_FAILURE);
+			return;
+		}
+		g.read(is);
+		
+		/*
+		TODO: read root
+		char key[1024];
+		while(fscanf(in, "%s", key)>0) {
+			if(key[0]=='#')
+				fgets(key, 1024, in)==key; // -Wunused-result
+			else if(key[0]!='$')
+				break;
+			else {
+				if(!strcmp(key, "$rootNode"))
+					assert(fscanf(in, "%d", &rootNode)==1);
+				else
+					fgets(key, 1024, in)==key; // -Wunused-result
+			}
+		}*/
+		
+		is.close();
 	}
 };
 

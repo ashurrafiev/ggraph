@@ -1,5 +1,5 @@
 CPP = ggraph.cpp
-HDR = profile.h random.h graph.h graphalg.h gen.h
+HDR = profile.h random.h graph.h graphalg.h gen.h flimit.h
 .PHONY: default all clean
 
 default: ggraph
