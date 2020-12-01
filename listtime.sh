@@ -1,7 +1,7 @@
 #!/bin/bash
 out=~/out_single.txt
 rm -f $out
-for f in $(ls ~/inputs/tr/*.txt)
+for f in $(ls ~/inputs/tr/2/*.txt)
 do
   echo $f
   echo $f >> $out
