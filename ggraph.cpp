@@ -2,7 +2,7 @@
 #include <functional>
 #include <string.h>
 
-#include "graphalg.h"
+#include "graphalg_p.h"
 #include "profile.h"
 #include "gen.h"
 #include "flimit.h"
@@ -63,10 +63,14 @@ int help() {
 		<< "\tTrigger all analysis options" << endl;
 	cerr << "-t, -time" << endl
 		<< "\tPrint time profile of analysis functions" << endl;
+	cerr << "-threads <num>" << endl
+		<< "\tParallelise APSP on multiple threads (does not affect SSSP)" << endl;
 	
 	cerr << endl << "Generators:" << endl;
 	cerr << "-in <filename>" << endl
 		<< "\tRead graph from file in -print format" << endl;
+	cerr << "-in-edgelist <filename>" << endl
+		<< "\tRead graph from file in edge list format" << endl;
 	cerr << "-norm <nnodes> <nedgepairs>" << endl
 		<< "\tRandom graph with normal degree distribution" << endl;
 	cerr << "-sfree <nnodes> <nedgepairs>" << endl
@@ -111,6 +115,7 @@ int main(int argc, char *argv[]) {
 	bool doSsspCostsMax = false;
 	bool doApspCostsSum = false;
 	bool doApspCostsMax = false;
+	int32_t numThreads = 1;
 	
 	int32_t nmin = 0;
 	int32_t nmax = 0;
@@ -128,6 +133,13 @@ int main(int argc, char *argv[]) {
 			seed = 0;
 			sourcePath = argv[++i];
 			SET_GEN(new GenRead(sourcePath));
+		}
+		else if(strcmp(argv[i], "-in-edgelist")==0) {
+			if(i+1>=argc)
+				return help();
+			seed = 0;
+			sourcePath = argv[++i];
+			SET_GEN(new GenReadEdgeList(sourcePath));
 		}
 		else if(strcmp(argv[i], "-norm")==0) {
 			if(i+2>=argc)
@@ -278,6 +290,11 @@ int main(int argc, char *argv[]) {
 			doApspCostsSum = true;
 			doApspCostsMax = true;
 		}
+		else if(strcmp(argv[i], "-threads")==0) {
+			if(i+1>=argc)
+				return help();
+			numThreads = atoi(argv[++i]);
+		}
 		else {
 			cerr << "Unknown option: " << argv[i] << endl;
 			return help();
@@ -328,11 +345,14 @@ int main(int argc, char *argv[]) {
 		profile.print(genTime, "generated");
 		cout << endl;
 	}
+	if(numThreads>1) {
+		cout << "# " << numThreads << " threads" << endl;
+	}
 	PROFILE(doCheckConnected, cout << (checkConnected(*g) ? "# Connected" : "# Not connected"));
 	PROFILE(doSsspHopsSum, cout << "# SSSP(" << rootNode << ") sum hops = " << ssspHopsSum(*g, rootNode));
 	PROFILE(doSsspHopsMax, cout << "# SSSP(" << rootNode << ") max hops = " << ssspHopsMax(*g, rootNode));
-	PROFILE(doApspHopsSum, cout << "# APSP sum hops = " << apspHopsSum(*g));
-	PROFILE(doApspHopsMax, cout << "# APSP max hops = " << apspHopsMax(*g));
+	PROFILE(doApspHopsSum, cout << "# APSP sum hops = " << apspHopsSum_Par(*g, numThreads));
+	PROFILE(doApspHopsMax, cout << "# APSP max hops = " << apspHopsMax_Par(*g, numThreads));
 	PROFILE(doSsspCostsSum, cout << "# SSSP(" << rootNode << ") sum costs = " << ssspCostsSum(*g, rootNode));
 	PROFILE(doSsspCostsMax, cout << "# SSSP(" << rootNode << ") max costs = " << ssspCostsMax(*g, rootNode));
 	PROFILE(doApspCostsSum, cout << "# APSP sum costs = " << apspCostsSum(*g));

@@ -136,6 +136,25 @@ public:
 		}
 		// assert(totalEdges==0);
 	}
+
+	void readEdgeList(std::istream& is) {
+		size_t s;
+		size_t totalNodes = 0;
+		while(is >> s) {
+			while(s>=totalNodes) {
+				addNode(0);
+				totalNodes++;
+			}
+			size_t d;
+			is >> d;
+			while(d>=totalNodes) {
+				addNode(0);
+				totalNodes++;
+			}
+			Node& node = nodes[s];
+			node.addEdge(d, 1);
+		}
+	}
 	
 	void print(std::ostream& os = std::cout) {
 		os << nodes.size() << " " << edgeCount() << " " << maxFanout() <<std::endl;

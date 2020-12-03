@@ -410,4 +410,23 @@ public:
 	}
 };
 
+class GenReadEdgeList : public Generator {
+public:
+	const char* path;
+	
+	GenReadEdgeList(const char* _path) : path(_path) {}
+	
+	virtual void generate(Graph& g) {
+		std::ifstream is;
+		is.open(path);
+		if(!is.is_open()) {
+			std::cerr << "Cannot read input file" << std::endl;
+			exit(EXIT_FAILURE);
+			return;
+		}
+		g.readEdgeList(is);
+		is.close();
+	}
+};
+
 #endif
